@@ -1,0 +1,1115 @@
+Sub test()
+    'ActiveCell.Clear
+   ' MsgBox Application.Version
+    'Debug.Print Application.Version
+    Range("A1:B10") = 2
+
+
+End Sub
+Sub testClear()
+    ActiveCell.ClearContents '清楚选择cell内容
+
+
+End Sub
+
+Sub for_function()
+Dim num%
+
+For num = 3 To -2 Step -1
+MsgBox num
+
+Next num
+
+End Sub
+
+
+Sub 计算()
+Application.ScreenUpdating = False '加在程序开始，不自动刷新
+Dim num%
+Dim ws As Worksheet
+Dim ws1 As Worksheet
+
+For Each wb In Application.Workbooks
+ If (wb.Name = "1.xlsx") Then
+    Set ws = wb.Sheets(1)
+    End If
+If (wb.Name = "2.xlsx") Then
+    Set ws1 = wb.Sheets(1)
+ End If
+Next wb
+ For Each rg In [a1:a35]
+    ws.Cells(7, 3) = rg.Offset(0, 2).value 'offset 偏移量：行、列
+    ws.Cells(18, 3) = rg.Offset(0, 1).value
+    gm = ws.Cells(39, 3).value
+    rg.Offset(0, 4) = gm
+ Next rg
+ Application.ScreenUpdating = True '加在程序结束
+End Sub
+
+
+Sub 新增()
+'
+' 新增一周数据
+'
+    Dim introw As Integer
+    Dim intStr '需要复制的行
+    Dim cellA '周数行
+    Dim weekDateNum
+    Dim cellDate '周日期
+    Dim groupSt, groupEnd
+    Dim groupStr '组合
+    introw = [a655536].End(xlUp).row + 2 '取有值的最大行数
+    weekDateNum = [a655536].End(xlUp).row + 4
+    intStr = CStr(introw) & ":" & CStr(introw)
+    rows("2:12").Select
+    Selection.Copy
+    rows(intStr).Select
+    ActiveSheet.Paste
+    cellA = "A" + CStr(introw) & ":J" & CStr(introw) 'cstr转为字符串，不用+用&就不需要用cstr
+    cellDate = "J" & CStr(weekDateNum)
+    Range(cellA).Select
+    ActiveCell.FormulaR1C1 = "第" & Format(Now(), "ww") & "周人员周报"
+    Range(cellDate).value = CStr(Date - Weekday(Date) + 2) & "~" & CStr(Date - Weekday(Date) + 8)
+    '数据组合
+    groupSt = introw + 1
+    groupEnd = introw + 10
+    groupStr = CStr(groupSt) & ":" & CStr(groupEnd)
+    rows(groupStr).Select
+    Application.CutCopyMode = False
+    Selection.rows.Group
+    Range("K1").Select
+
+End Sub
+Sub 删除()
+'
+' 删除一周数据
+'
+    Dim strow, endrow
+    Dim strInfo
+    endrow = [a655536].End(xlUp).row
+    strow = [a655536].End(xlUp).row - 11
+    If endrow = 12 Then
+         MsgBox "第一周数据不能删除!"
+        Else
+         If MsgBox("确定是否删除?", vbYesNo, "请选择") = vbYes Then
+            strInfo = CStr(strow) & ":" & CStr(endrow)
+             rows(strInfo).Select
+                 Selection.Delete Shift:=xlUp
+                 Range("K1").Select
+             End If
+        End If
+
+    End Sub
+
+
+Sub 计算打卡天数()
+    Dim rg As Range
+    Dim month_%
+    month_ = Format(Now(), "mm") - 1 '获取月份
+    If (month_ = 0) Then
+        month_ = 12
+        End If
+    Dim nums% '加班天数
+    For Each rg In [f2:AJ52]
+     Dim a As Variant
+     Dim b As Variant
+     Dim result
+     If (rg.Column = 6) Then '从新的一行开始，清楚数据
+        result = ""
+        nums = 0
+     End If
+     Dim rs
+       a = Split(rg.value, Chr(10))
+        b = UBound(a)
+         For i = 0 To b
+             Dim str '周六、周日也要计算加班
+             If (a(i) > "20:00" Or rg.Offset(1 - rg.row, 0).value = "六" Or rg.Offset(1 - rg.row, 0).value = "日") Then
+                 If rg.Offset(1 - rg.row, 0).value = "六" Then '周六、周日转换成日期，用前1个日期+1
+                    str = rg.Offset(1 - rg.row, -1).value + 1
+                 ElseIf rg.Offset(1 - rg.row, 0).value = "日" Then
+                    str = rg.Offset(1 - rg.row, -2).value + 2
+                Else:
+                    str = rg.Offset(1 - rg.row, 0).value
+                End If
+
+                result = result & str & "/"
+                nums = nums + 1
+                  Exit For
+            End If
+     Next
+     If (rg.Column = 36) Then
+        rs = "AK" & CStr(rg.row)
+        If Len(result) > 0 Then
+            Range(rs).value = month_ & "月加班总计" & nums & "天：" & Left(result, Len(result) - 1) & "加班到晚上21:00/加班餐费25/加班打车费20"
+            End If
+      End If
+    Next rg
+
+End Sub
+
+Sub 汇总多个sheet()
+Application.ScreenUpdating = False
+
+    Dim ws As Worksheet '把多个sheet的内容放到一个sheet里面
+    Dim addsheet As Worksheet
+    Dim j, k, rownum, addrownum As Integer
+    Dim row1, row2, row3 As String
+    Dim res As String
+    Set wb = ThisWorkbook
+    j = wb.Workkshees.count
+    Set addsheet = wb.Sheets.Add(after:=wb.Sheets(wb.Sheets.count))
+    addsheet.Name = "汇总"
+    For i = 6 To j
+    Set ws = wb.Sheets(i)
+    ws.Select
+    rownum = ws.Range("A65536").End(xlUp).row
+    ws.Columns("A:A").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        If (ws.celss(3, 3) = "") Then
+            res = ws.Cells(5, 3)
+            Else:
+            res = ws.Cells(3, 3)
+            End If
+    row3 = "A5:A" & rownum
+    ws.Range("A5") = res
+    ws.Range("A5").Select
+    Selection.AutoFill Destination:=ws.Range(row3)
+    row1 = "5:" & rownum
+    ws.rows(row1).Select
+    selcetion.Copy
+    Sheets("汇总").Select
+    addrownum = addsheet.Range("A65536").End(xlUp).row + 1
+    row2 = addrownum & ":" & addrownum
+    addsheet.rows(row2).Select
+    ActiveSheet.Paste
+    ws.Columns("A:A").Delete
+    Next i
+    Application.ScreenUpdating = True
+
+End Sub
+
+Sub vlookup()
+Dim ws As Worksheet
+Dim rw, rw1, rw2
+Dim row, row1, row2
+Dim thisWs As Worksheet
+Dim thisWb As Workbook
+Dim lookvalue As Range
+Dim table_arr As Range
+Dim str, tmpStr, sbj_val
+Dim value, value1, value2
+Set thisWb = ThisWorkbook
+Set thisWs = thisWb.Worksheets(1)
+For Each wb In Application.Workbooks
+    If (wb.Name = "G101.xls") Then
+    Set ws = wb.Sheets(1)
+    rw = ws.Range("F65536").End(xlUp).row
+    row = "F1:F" & row
+    For Each rg In ws.Range(row)
+    If (rg <> "") Then
+    str = Split(rg, "+")
+        For Each tmpStr In str
+        '判断减
+        If (InStr(tmpStr, "-") > 0) Then
+            minstr = Split(tmpStr, "-") '拆成数组
+            count = 0
+            For Each tmpMinStr In minstr
+                count = count + 1
+                If (InStr(tmpMinStr, "!") > 0) Then
+                    col = 2
+                    thisWs.Range("H3") = Replace(tmpMinStr, "!", "")
+                End If
+            If (InStr(tmpMinStr, "@") > 0) Then 'instr 返回指定字符串出现位置
+                col = 3
+                thisWs.Range("H3") = Replace(tmpMinStr, "@", "")
+            End If
+            errorSbj = thisWs.Range("H3")
+            'If (Not thisWs.Range("A:A").Find(errorSbj, LookAt:=xlWhole) Is Nothing) Then 精确匹配
+            If (Not thisWs.Range("A:A").Find(errorSbj, LookIn:=xlValues) Is Nothing) Then '近似匹配
+                minSbj_val = Application.WorksheetFunction.vlookup(thisWs.Range("H3"), thisWs.Range("A:C"), col, False)
+                If (count = 1) Then
+                    value = value + minSbj_val
+                    Else: value = value - minSbj_val
+                    End If
+                End If
+            Next tmpMinStr
+        End If
+    '判断加
+        If (InStr(tmpStr, "-") <= 0) Then
+            If (InStr(tmpStr, "!") > 0) Then '判断第一列
+                col = 2
+                thisWs.Range("H3") = Replace(tmpStr, "!", "")
+            End If
+        If (InStr(tmpStr, "@") > 0) Then '判断第二列
+            col = 3
+            thisWs.Range("H3") = Replace(tmpStr, "@", "")
+           End If
+        errorSbj = thisWs.Range("H3")
+        If (Not thisWs.Range("A:A").Find(errorSbj, LookIn:=xlValues) Is notthing) Then
+            sbj_val = Application.WorksheetFunction.vlookup(thisWs.Range("H3"), thisWs.Range("A:C"), col, False)
+            value = value + sbj_val
+            End If
+        End If
+        Next tmpStr
+        rg.Offset(0, -3) = value
+        value = 0
+        End If
+    Next rg
+    End If
+    Next wb
+Exit Sub
+Err_handle:
+    MsgBox (errorSbj & "本科目不存在")
+End Sub
+
+Sub 合并单元格拆解()
+Dim introw
+Dim rows, tmp, row_
+Dim i
+  introw = [a655536].End(xlUp).row
+  rows = "A1:A" & introw
+    For Each rg In Range(rows)
+        row_ = rg.row
+       tmp = Split(rg, Chr(10))
+        For Each tp In tmp
+            i = i + 1
+            Cells(i, 2) = tp
+        Next tp
+        i = rg.row
+    Next rg
+End Sub
+
+
+Sub 合并单元格拆分()
+    Dim introw, rows
+Dim rows, tmp, row_
+Dim i
+Dim tp
+  introw = [a655536].End(xlUp).row
+  rows = "A1:A" & introw
+    For Each rg In Range(rows)
+        If (rg <> "") Then
+            For i = 1 To rg.MergeArea.rows.count Step 1
+                If (rg <> "") Then
+                     Cells(i + rg.row - 1, 2) = rg
+                End If
+            Next
+            i = rg.row
+         End If
+     Next rg
+End Sub
+
+Sub setCsv()
+    '把csv转成excel
+    Dim wb As Workbook, excelWb As Workbook, openWb As Workbook
+    Dim ws As Worksheet, excelWs
+    Dim path, savePath, openPath
+    Dim rownum
+    Dim files, saveName
+    Dim fs As Object
+    Dim excelApp
+    Set fs = CreateObject("Scripting.FileSystemObject")
+    Set excelApp = CreateObject("Excel.Application")
+    Set wb = ThisWorkbook
+    Set ws = wb.Sheets(1)
+    path = wb.path
+    files = Dir(path + "\\" & "*.csv")
+    Do While Len(files) '获取当前文件下所有文件
+        Set excelWb = excelApp.Workbooks.Add '新增工作簿
+        savePath = path + "\"
+        saveName = Replace(files, ".csv", "")
+        excelWb.SaveAs savePath & saveName + ".xlsx" '保存工作簿
+        excelWb.Close
+        excelApp.Quit
+        openPath = path & "\" & Replace(files, ".csv", "xlsx")
+        Set openWb = Workboos.Open(openPath, ReadOnly = False)
+        For Each wb In Application.Workbooks
+            If wb.Name = "整理csv.xlsm" Then
+                wb.Activate '通过宏录制
+                 With ActiveSheet.QueryTables.Add(Connection:= _
+                    "TEXT;C:\Users\musaxi\Desktop\FileList_20200601194729.csv", Destination:= _
+                    Range("$A$1"))
+                    .CommandType = 0
+                    .Name = "FileList_20200601194729"
+                    .FieldNames = True
+                    .RowNumbers = False
+                    .FillAdjacentFormulas = False
+                    .PreserveFormatting = True
+                    .RefreshOnFileOpen = False
+                    .RefreshStyle = xlInsertDeleteCells
+                    .SavePassword = False
+                    .SaveData = True
+                    .AdjustColumnWidth = True
+                    .RefreshPeriod = 0
+                    .TextFilePromptOnRefresh = False
+                    .TextFilePlatform = 65001 'UTF-8 编码
+                    .TextFileStartRow = 1
+                    .TextFileParseType = xlDelimited
+                    .TextFileTextQualifier = xlTextQualifierDoubleQuote
+                    .TextFileConsecutiveDelimiter = False
+                    .TextFileTabDelimiter = True
+                    .TextFileSemicolonDelimiter = False
+                    .TextFileCommaDelimiter = True
+                    .TextFileSpaceDelimiter = False
+                    .TextFileColumnDataTypes = Array(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2) '列的个数
+                    .TextFileTrailingMinusNumbers = True
+                    .Refresh BackgroundQuery:=False
+                End With
+            Else:
+            ThisWorkbook.Sheets(1).rows("1:1").Select
+            Selection.Delete Shift:=xlUp
+            ThisWorkbook.Sheets(1).rows("2:2").Select
+            Selection.Delete Shift:=xlUp
+            rownum = ThisWorkbook.Sheets(1).Range("A65536").End(xlUp).row
+            colnum = ThisWorkbook.Sheets(1).Cells(1, 256).End(xlToLeft).Column
+            rows = "A1:Z" & rownum
+            For Each rg In ThisWorkbook.Sheets(1).Range(rows)
+                '这里只能通过cells改变值，不能通过range。不知道为什么
+                ThisWorkbook.Sheets(1).Cells(rg.row, rg.Column) = Trim(rg)
+            Next rg
+                ThisWorkbook.Sheets(1).rows("1:" & rownum).Copy wb.Sheets(1).Range("A1")
+                wb.Sheets(1).DrawingObjects.Delete
+                ThisWorkbook.Sheets(1).Columns("A:Z").ClearContents
+                openWb.Close savechanges:=True
+            End If
+            Next wb
+            files = Dir '设置重复循环
+        Loop
+End Sub
+
+Sub 获取文件编码()
+    Dim sPath As String
+    sPath = "c:\test.txt"
+    iFN = VBA.FreeFile
+    Open sPath For Binary Access Read As iFN
+    Dim iLenB
+    '获取打开文本文件的字节数
+    iLenB = VBA.LOF(iFN)
+    If iLenB > 0 Then
+        Dim sResult() As Byte
+        ReDim sResult(iLenB - 1)
+        Get iFN, , sResult
+        Select Case UBound(sResult)
+            Case 0
+            MsgBox "ANSI编码"
+            Case 1
+                sBom = VBA.Hex(sResult(0)) & VBA.Hex(sResult(1))
+                If sBom = "FEFF" Then
+                    MsgBox "Unicode Big Endian 编码"
+                ElseIf sBom = "FFFE" Then
+                     MsgBox "Unicode Little Endian 编码"
+                Else
+                    MsgBox "ANSI编码"
+                End If
+            Case Is > 1
+                sBom = VBA.Hex(sResult(0)) & VBA.Hex(sResult(1)) & VBA.Hex(sResult(2))
+                If Left(sBom, 4) = "FEFF" Then
+                    MsgBox "Unicode Big Endian 编码"
+                ElseIf Left(sBom, 4) = "FFFE" Then
+                    MsgBox "Unicode Little Endian 编码"
+                ElseIf Left(sBom, 6) = "EFBBBF" Then
+                    MsgBox "UTF-8编码"
+                Else
+                    MsgBox "ANSI编码"
+                End If
+        End Select
+    End If
+    '关闭打开的文件
+    Close iFN
+End Sub
+
+Sub 拆分()
+    '错误数据拆分用于测试管理工具平台下载数据，一个单元格内容拆分合并后变成多个单元格，但每个单元格内容都一样，应该是程序生成时的bug
+    Dim introw, rows, realRow
+    Dim i, k
+    Dim tp
+    introw = [H65536].End(xlUp).row
+    rows = "H1:H" & introw
+    For i = 3 To introw Step 1
+        realRow = "H" & i & ":H" & i
+        If (Range(realRow).MergeArea.count > 1) Then
+            Range(realRow).Offset(0, 1) = Range(realRow)
+            i = i + Range(realRow).MergeArea.count - 1
+        Else:
+            Range(realRow).Offset(0, 1) = Range(realRow)
+        End If
+        Next i
+End Sub
+
+Sub 统计打印()
+    Dim openWb As Workbook
+    Dim ws As Worksheet
+    Dim count
+    Dim path
+    Dim files
+    count = 0
+    path = "C:\user\"
+    files = Dir(path & "*.xlsx")
+    Do While Len(files)
+        Set openWb = Workbooks.Open(path & "\" & files, ReadOnly = False)
+        Set ws = openWb.Worksheets(1)
+        count = count + ws.PageSetup.Pages.count
+        openWb.Close
+        files = Dir
+    Loop
+    MsgBox count
+End Sub
+
+Sub 拆分excel()
+'按日期拆分内容到单独的excel，并且设置成可打印的状态
+    Dim date_ As Date, date_1 As Date
+    Dim rowcount, rosws
+    date_ = Format("2020/07/20", "yyyy/mm/dd")
+    date_1 = Format("2020/07/20", "yyyy/mm/dd")
+    For i = 1 To 46 Step 1
+        '通过宏下拉框选择要筛选的内容
+        rowcount = [A65536].End(xlUp).row
+        rosws = "A1:H" & rowcount
+        If rowcount > 2 Then
+            '筛选有内容才复制
+        End If
+        '录制打印格式内容
+        date_1 = DateAdd("d", 1, date_1) '日期加减
+        date_ = DateAdd("d", 1, date_)
+    Next i
+End Sub
+
+Sub 同样的内容合并单元格()
+    '只能按一列内容合并，如果名字一样，日期不一样，无法按日期分开合并
+    Dim l
+    Dim rows, val, st, ed
+    Dim row2
+    Dim megrow
+    Dim count
+    count = 0
+    st = 1
+    val = ""
+        For i = 3 To 6299 Step 1
+            st = st + 1
+            rows = "C" & i & ":C" & i
+            rows2 = "C" & i + 1 & ":C" & i + 1
+            If (val = Range(rows)) Then
+                count = count + 1 '统计重复值个数，如果>1才合并
+            Else:
+                If count >= 1 Then
+                megrow = "H" & i - count - 1 & ":H" & i - 1
+                Range(megrow).Select
+                With Selection
+                    '录制合并单元格工时
+                End With
+                Selection.Merge
+                count = 0
+            End If
+            End If
+
+End Sub
+
+Public strFolder As String
+Sub 选择文件()
+    Dim ws
+    Dim i
+    Dim files
+    Dim rw, rw_a
+    Dim rows, rows_a
+    Dim oldName
+    With Application.FileDialog(msoFileDialogFolderPicker)
+        .Title = "Select Folder"
+        .InitialFileName = "C:\"
+        If .Show Then
+            strFolder = .SelectedItems(1) '选择文件的路径
+        End If
+    End With
+    files = Dir(strFolder + "\\" & "*.*") '代表任意文件类型。 *.jpg，*.png 只显示图片
+    i = 1
+    Set ws = ThisWorkbook.Sheets(1)
+    rw_a = ws.Range("A65536").End(xlUp).row
+    rows_a = "A2:A" & rw_a
+    ws.Range(rows_a).ClearContents
+    Do While Len(files)
+        ws.Cells(i + 1, 1) = files
+        i = i + 1
+        files = Dir
+    Loop
+
+
+End Sub
+Sub 更改名称()
+    Dim rw
+    Dim rows
+    Dim rw_a
+    Dim rows_a
+    Dim files
+    Dim i
+    If strFolder = "" Then
+        MsgBox "请先选择文件路径！"
+        Else:
+             Set ws = ThisWorkbook.Sheets(1)
+             rw = ws.Range("B65536").End(xlUp).row
+              rows = "B2:B" & rw
+             For Each rg In Range(rows)
+              If (rg <> "") Then
+                    oldName = rg.Offset(0, -1)
+                    If IsFileExists(strFolder & "\" & oldName) = True Then '判断文件是否存在
+                        Name strFolder & "\" & oldName As strFolder & "\" & rg & Mid(oldName, InStr(oldName, "."), Len(oldName)) '截取字符串
+                        Else:
+                            MsgBox "请先选择文件，刷新列表！"
+                         End If
+                End If
+
+             Next rg
+              '修改完之后刷新列表
+         rw_a = ws.Range("A65536").End(xlUp).row
+         rows_a = "A2:A" & rw_a
+         ws.Range(rows_a).ClearContents
+          files = Dir(strFolder + "\\" & "*.*")
+          i = 1
+            Do While Len(files)
+                ws.Cells(i + 1, 1) = files
+                i = i + 1
+                files = Dir
+             Loop
+
+    End If
+
+
+End Sub
+Sub 计算加班小时()
+    Dim rg As Range
+    Dim month_%
+    Dim hor, totalhor, zmhor
+    Dim a1, a2, a3, a4
+    Dim ce
+    month_ = Format(Now(), "mm") - 1 '获取月份
+    If (month_ = 0) Then
+        month_ = 12
+        End If
+    Dim nums% '加班天数
+    Dim chidao% '迟到天数
+    Dim zmjb% '周末加班小时
+    Dim wjdk% '忘记打卡
+    For Each rg In [E2:AJ52]
+     Dim a As Variant
+     Dim b As Variant
+     Dim result
+     If (rg.Column = 5) Then '从新的一行开始，清楚数据
+        result = ""
+        nums = 0
+        chidao = 0
+        zmjb = 0
+        wjdk = 0
+     End If
+     Dim rs, rs2, rs3, rs4, rs5
+       a = Split(Trim(rg.value), Chr(10))
+        b = UBound(a)
+
+            If b >= 1 Then
+             Dim str '周六、周日也要计算加班
+             If (a(b) <> "" And (rg.Offset(1 - rg.row, 0).value = "六" Or rg.Offset(1 - rg.row, 0).value = "日")) Then
+
+             nums = nums + 1
+
+             End If
+
+
+              If (rg.Offset(1 - rg.row, 0).value = "六" Or rg.Offset(1 - rg.row, 0).value = "日") Then
+               a3 = CDate(Format(a(b), "Long Time"))
+                 a4 = CDate(Format(a(0), "Long Time"))
+            zmhor = TimeValue(a3) - TimeValue(a4)
+             zmjb = zmjb + Fix(zmhor * 24) - 1
+             End If
+
+            If (CDate(Format(a(0), "Long Time")) >= "10:01" And CDate(Format(a(0), "Long Time")) < "11:00" And rg.Offset(1 - rg.row, 0).value <> "六" And rg.Offset(1 - rg.row, 0).value <> "日") Then
+
+                     chidao = chidao + 1
+                     End If
+
+
+             If ((rg.Offset(1 - rg.row, 0).value <> "六" And rg.Offset(1 - rg.row, 0).value <> "日") And (CDate(Format(a(b), "Long Time")) >= "21:00" Or (CDate(Format(a(b), "Long Time")) > "00:00" And CDate(Format(a(b), "Long Time")) < "06:00"))) Then
+
+                      a1 = CDate(Format(a(b), "Long Time"))
+                    a2 = CDate(Format("20:00", "Long Time"))
+                    ce = a1 - a2
+                    hor = Hour(ce)
+                    If (CDate(Format(a(b), "Long Time")) > "00:00" And CDate(Format(a(b), "Long Time")) < "06:00") Then
+                         hor = hor - 12
+                 End If
+                 totalhor = totalhor + hor
+            End If
+
+            Else:
+                    If rg.value <> "" Then
+                    If (CDate(Format(rg.value, "Long Time")) > "10:00" And CDate(Format(rg.value, "Long Time")) < "12:00") Then
+                     chidao = chidao + 1
+                     End If
+                    End If
+
+
+                    If (rg.value <> "" And (rg.Offset(1 - rg.row, 0).value = "六" Or rg.Offset(1 - rg.row, 0).value = "日")) Then
+
+                    nums = nums + 1
+
+                    End If
+
+
+                     If (rg.value <> "" And (rg.Offset(1 - rg.row, 0).value = "六" Or rg.Offset(1 - rg.row, 0).value = "日")) Then
+
+                        If (CDate(Format(rg.value, "Long Time")) < "10:00") Then
+                          zmjb = zmjb + 3
+
+                        Else:
+                          zmjb = zmjb + 4
+                        End If
+
+
+
+             End If
+
+                  If (rg.value <> "" And (rg.Offset(1 - rg.row, 0).value = "六" Or rg.Offset(1 - rg.row, 0).value = "日")) Then
+                    wjdk = wjdk + 1
+                    End If
+
+
+                  If rg.value <> "" Then
+                 If ((rg.Offset(1 - rg.row, 0).value <> "六" And rg.Offset(1 - rg.row, 0).value <> "日") And (CDate(Format(rg.value, "Long Time")) >= "21:00" Or (CDate(Format(rg.value, "Long Time")) > "00:00" And CDate(Format(rg.value, "Long Time")) < "06:00"))) Then
+                    a1 = CDate(Format(rg.value, "Long Time"))
+                    a2 = CDate(Format("20:00", "Long Time"))
+                    ce = a1 - a2
+                    hor = Hour(ce)
+                     If (CDate(Format(rg.value, "Long Time")) > "00:00" And CDate(Format(rg.value, "Long Time")) < "06:00") Then
+                         hor = hor - 12
+                 End If
+                    totalhor = totalhor + hor
+                 End If
+                 End If
+            End If
+
+     If (rg.Column = 36) Then
+        rs = "AK" & CStr(rg.row)
+
+            Range(rs).value = totalhor
+            totalhor = 0
+         rs2 = "AL" & CStr(rg.row)
+
+            Range(rs2).value = nums
+            nums = 0
+       rs3 = "AO" & CStr(rg.row)
+
+            Range(rs3).value = chidao
+            chidao = 0
+
+      rs4 = "AP" & CStr(rg.row)
+
+            Range(rs4).value = zmjb
+            zmjb = 0
+
+     rs5 = "AQ" & CStr(rg.row)
+
+            Range(rs5).value = wjdk
+            wjdk = 0
+      End If
+
+    Next rg
+
+
+End Sub
+
+Function IsFileExists(ByVal strFileName As String) As Boolean
+    '判断文件是否存在
+    If Dir(strFileName, 16) <> Empty Then
+        IsFileExists = True
+    Else
+        IsFileExists = False
+    End If
+End Function
+
+
+Sub 去除汉字()
+    Dim arr, k% '定义变量
+    arr = Range("a1:a4") '定义数据源
+    With CreateObject("vbscript.regexp") '创建正则应用
+        .Global = True '不区分大小写
+        .Pattern = "\W+[\.]*" '建立正则表达式
+        For k = 1 To UBound(arr)
+            Cells(k, 2) = .Replace(arr(k, 1), "") '提取数据
+        Next
+    End With
+End Sub
+
+
+
+Sub 合并多个excel转CSV()
+
+
+    '把csv转成excel
+    Dim wb As Workbook, excelWb As Workbook, openWb As Workbook
+    Dim ws As Worksheet, excelWs
+    Dim path, savePath, openPath
+    Dim rownum
+    Dim files, saveName
+    Dim fs As Object
+    Dim excelApp
+    Set fs = CreateObject("Scripting.FileSystemObject")
+    Set excelApp = CreateObject("Excel.Application")
+    Set wb = ThisWorkbook
+    Set ws = wb.Sheets(1)
+    path = "C:\\Users\\musaxi\\Desktop\\110602"
+    files = Dir(path + "\\" & "*.csv")
+     Do While Len(files) '获取当前文件下所有文件
+        Set excelWb = excelApp.Workbooks.Add '新增工作簿
+        savePath = path + "\"
+        saveName = Replace(files, ".csv", "")
+        excelWb.SaveAs savePath & saveName + ".xlsx" '保存工作簿
+        excelWb.Close
+        excelApp.Quit
+        openPath = path & "\" & Replace(files, ".csv", "xlsx")
+        Set openWb = Workboos.Open(openPath, ReadOnly = False)
+        For Each wb In Application.Workbooks
+
+            Next wb
+            files = Dir '设置重复循环
+        Loop
+End Sub
+
+Sub 合并多个excel()
+
+
+    '把csv转成excel
+    Dim wb As Workbook, excelWb As Workbook, openWb As Workbook
+    Dim ws As Worksheet, excelWs
+    Dim path, savePath, openPath
+    Dim rownum
+    Dim files, saveName
+    Dim fs As Object
+    Dim excelApp
+    Set fs = CreateObject("Scripting.FileSystemObject")
+    Set excelApp = CreateObject("Excel.Application")
+    path = "C:\\Users\\musaxi\\Desktop\\110602"
+    files = Dir(path + "\\" & "*.*")
+    Dim counts
+    Set wb = ThisWorkbook
+    Set excelWs = wb.Sheets(1)
+     counts = 1
+     Do While Len(files) '获取当前文件下所有文件
+        openPath = path & "\\" & files
+        Set openWb = Workbooks.Open(openPath, ReadOnly = False)
+        Set ws = openWb.Sheets(1)
+        rownum = ws.Range("A65536").End(xlUp).row
+         ws.rows("3:" & rownum).Select
+         Selection.Copy
+         excelWs.Activate
+          rows(counts & ":" & counts).Select
+        Paste
+        counts = counts + rownum - 2
+        Application.CutCopyMode = False
+         openWb.Close savechanges:=True
+        files = Dir '设置重复循环
+        Loop
+End Sub
+
+Sub 通过下拉框复制()
+    Dim dic As Object
+    Dim ws As Worksheet, thisWs As Worksheet
+    Dim arr
+    Dim path
+    Dim rownum
+    Dim excelApp As Object
+     Dim thisWb As Workbook, excelWb As Object, openWb As Workbook
+    Set dic = CreateObject("scripting.dictionary")
+     Set excelApp = CreateObject("Excel.Application")
+
+    Set thisWb = ThisWorkbook
+    Set thisWs = thisWb.Sheets(1)
+    For Each i In dic.Items():
+         ActiveSheet.Range("$A$1:$J$22602").AutoFilter Field:=3, Criteria1:=i
+            rownum = thisWs.Range("A65536").End(xlUp).row
+            thisWs.rows("1:" & rownum).Select
+            Selection.Copy
+            Set excelWb = excelApp.Workbooks.Add '新增工作簿
+            path = "C:\Users\musaxi\Desktop\11\" & i & ".xlsx"
+            excelWb.SaveAs path '保存工作簿
+            excelWb.Close:
+            Set openWb = Workbooks.Open(path, ReadOnly = False)
+            Set ws = openWb.Sheets(1)
+            ws.Paste
+            ws.Columns("I:I").EntireColumn.AutoFit
+            ws.Cells.Select
+            ws.Range("K2").Activate
+            ws.Cells.EntireColumn.AutoFit
+            ws.Cells.Select
+            ws.Range("K4").Activate
+            ws.Cells.EntireRow.AutoFit
+            ws.Range("A5").Select
+            openWb.Close savechanges:=True
+
+    Next
+  excelApp.Quit
+End Sub
+
+
+Sub 提出多个excel信息()
+
+
+    '把csv转成excel
+    Dim wb As Workbook, excelWb As Workbook, openWb As Workbook
+    Dim ws As Worksheet, excelWs
+    Dim path, savePath, openPath
+    Dim rownum
+    Dim files, saveName
+    Dim fs As Object
+    Dim excelApp
+    Set fs = CreateObject("Scripting.FileSystemObject")
+    Set excelApp = CreateObject("Excel.Application")
+    Set wb = ThisWorkbook
+    Set ws = wb.Sheets(1)
+    path = "C:\\Users\\musaxi\\Desktop\\公司工作\\成都招行\\需求申请单"
+    files = Dir(path + "\\" & "*.xls")
+     Do While Len(files) '获取当前文件下所有文件
+
+            files = Dir '设置重复循环
+        Loop
+End Sub
+
+Sub 拆分1()
+  Dim wb As Workbook
+  Dim ws As Worksheet
+  Dim rownum
+  Dim numadd
+  Set wb = ThisWorkbook
+  Set ws = wb.Sheets(1)
+  rownum = ws.Range("A65536").End(xlUp).row
+  For Each i In ws.Range("A2:A" & rownum)
+    numadd = i.row + 1
+    If ((numadd Mod 2) = 1) Then
+         ws.rows(numadd & ":" & numadd).Select
+        Selection.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+          i.Offset(0, 2) = "上午"
+    i.Offset(1, 2) = "下午"
+     For Each j In ws.Range("D" & i.row & ":AH" & i.row)
+            If (j.value <> "") Then
+                t = Split(j, Chr(10))
+                b = UBound(t)
+                If b >= 2 Then
+                    j.Select
+                    With Selection.Interior
+                        .Pattern = xlSolid
+                        .PatternColorIndex = xlAutomatic
+                        .Color = 65535
+                        .TintAndShade = 0
+                        .PatternTintAndShade = 0
+                    End With
+                    End If
+                If (t(0) < "12:00") Then
+                    j.value = t(0)
+                    Else:
+                     j.value = ""
+                End If
+               If (t(b) > "14:00") Then
+                    j.Offset(1, 0) = t(b)
+                End If
+
+            End If
+        Next
+    End If
+
+
+    Next
+End Sub
+
+Sub 检查2()
+  Dim wb As Workbook
+  Dim ws As Worksheet
+  Dim rownum
+  Dim numadd
+  Dim a1, a2
+  Dim ce
+  Set wb = ThisWorkbook
+  Set ws = wb.Sheets(1)
+  rownum = ws.Range("A65536").End(xlUp).row
+  For Each i In ws.Range("A2:A" & rownum)
+    numadd = i.row + 1
+    If ((numadd Mod 2) = 1) Then
+     For Each j In ws.Range("D" & i.row & ":AH" & i.row)
+            If (j.value <> "") Then
+                t = Split(j, Chr(10))
+                b = UBound(t)
+                 For k = 0 To b
+                    If ((t(k) > "12:00" And t(k) < "14:00") Or (t(k) > "00:00" And t(k) < "07:00")) Then
+                     j.Select
+                    With Selection.Interior
+                    .Pattern = xlSolid
+                    .PatternColorIndex = xlAutomatic
+                    .Color = 5296274
+                    .TintAndShade = 0
+                    .PatternTintAndShade = 0
+                End With
+                    End If
+                     a1 = CDate(Format(Trim(t(0)), "Long Time"))
+                     a2 = CDate(Format(Trim(t(b)), "Long Time"))
+                     ce = a1 - a2
+                    If (ce > 0) Then
+                         j.Select
+                         With Selection.Interior
+                        .Pattern = xlSolid
+                        .PatternColorIndex = xlAutomatic
+                        .Color = 5296274
+                        .TintAndShade = 0
+                        .PatternTintAndShade = 0
+                        End With
+                    End If
+
+                 Next k
+
+            End If
+        Next
+    End If
+
+
+    Next
+End Sub
+Sub 合并1()
+  Dim wb As Workbook
+  Dim ws As Worksheet
+  Dim rownum
+  Dim numadd
+  Dim i
+  Dim j
+  Set wb = ThisWorkbook
+  Set ws = wb.Sheets(1)
+  rownum = ws.Range("A65536").End(xlUp).row
+  For Each i In ws.Range("A2:A" & rownum)
+    numadd = i.row + 1
+    If ((numadd Mod 2) = 1) Then
+     For Each j In ws.Range("E" & i.row & ":AH" & i.row)
+                If (j.Text = "") Then
+                     j.value = j.Offset(1, 0).Text
+                End If
+                If (j.Offset(1, 0).Text <> "") Then
+                        j.value = j.Text & Chr(10) & j.Offset(1, 0).Text
+                End If
+
+        Next
+    End If
+
+
+    Next
+End Sub
+
+Sub calc()
+    Dim openWb As Workbook, thisWb As Workbook
+    Dim ws As Worksheet, thisWs As Worksheet
+    Dim count
+    Dim path
+    Dim files
+    Dim startYear
+    Dim userMonth, tmpMonth, comperMonth
+    Dim selectMonth, selectDay
+    startYear = 2018
+    count = 0
+    Dim dateArray(30) As Variant
+    Dim maxDateArrayRZ As Variant
+    Dim maxDateArrayLZ As Variant
+    Dim j
+    path = "C:\Users\musaxi\Desktop\test\人力资源池.xls"
+    Set openWb = Workbooks.Open(path, ReadOnly = False)
+    Set ws = openWb.Worksheets(1)
+    Set thisWb = ThisWorkbook
+    Set thisWs = thisWb.Worksheets(1)
+
+    Dim citys As Variant
+    Dim countCity, countCity1
+    countCity = 0
+    countCity1 = 0
+    citys = Array("深圳", "成都", "杭州")
+     '入职人数
+    For Each city In citys
+        countCity = countCity + 1
+        ws.Range("$A$2:$N$65517").AutoFilter Field:=7, Criteria1:=city
+        tmpMonth = DateSerial(startYear, 1, 1)
+        For i = 1 To 48 Step 1
+
+             selectMonth = Format(tmpMonth, "yyyy/mm")
+             selectDay = tmpMonth
+             comperMonth = DateAdd("m", 1, tmpMonth)
+               For j = 1 To 31 Step 1
+               If DateDiff("m", selectDay, comperMonth) > 0 Then
+                  dateArray(j - 1) = selectDay & ""
+                 selectDay = DateAdd("d", 1, selectDay)
+               End If
+               Next j
+               ws.Range("$A$2:$N$65517").AutoFilter Field:=5, Criteria1:=dateArray, Operator:= _
+            xlFilterValues
+              tmpMonth = DateAdd("m", 1, tmpMonth)
+              thisWs.Cells(i, countCity).value = ws.AutoFilter.Range.Columns(1).SpecialCells(xlCellTypeVisible).count - 1
+              Erase dateArray
+
+
+
+        Next i
+    Next city
+
+
+     Selection.AutoFilter
+
+      '离职人数
+    For Each city In citys
+        countCity1 = countCity1 + 1
+        ws.Range("$A$2:$N$65517").AutoFilter Field:=7, Criteria1:=city
+        tmpMonth = DateSerial(startYear, 1, 1)
+        For i = 1 To 48 Step 1
+
+             selectMonth = Format(tmpMonth, "yyyy/mm")
+             selectDay = tmpMonth
+             comperMonth = DateAdd("m", 1, tmpMonth)
+               For j = 1 To 31 Step 1
+               If DateDiff("m", selectDay, comperMonth) > 0 Then
+                  dateArray(j - 1) = selectDay & ""
+                 selectDay = DateAdd("d", 1, selectDay)
+               End If
+               Next j
+               ws.Range("$A$2:$N$65517").AutoFilter Field:=13, Criteria1:=dateArray, Operator:= _
+            xlFilterValues
+              tmpMonth = DateAdd("m", 1, tmpMonth)
+              thisWs.Cells(i, countCity1 + 4).value = ws.AutoFilter.Range.Columns(1).SpecialCells(xlCellTypeVisible).count - 1
+              Erase dateArray
+
+
+
+        Next i
+    Next city
+
+     Selection.AutoFilter
+
+      '月末人数
+    For Each city In citys
+        countCity1 = countCity1 + 1
+        ws.Range("$A$2:$N$65517").AutoFilter Field:=7, Criteria1:=city
+        tmpMonth = DateSerial(startYear, 1, 1)
+        For i = 1 To 48 Step 1
+
+             selectMonth = Format(tmpMonth, "yyyy/mm")
+             selectDay = tmpMonth
+             comperMonth = DateAdd("m", 1, tmpMonth)
+               For j = 1 To 31 Step 1
+               If DateDiff("m", selectDay, comperMonth) > 0 Then
+                  maxDateArrayRZ(j - 1) = selectDay & ""
+                 selectDay = DateAdd("d", 1, selectDay)
+               End If
+               Next j
+               ws.Range("$A$2:$N$65517").AutoFilter Field:=5, Criteria1:=maxDateArrayRZ, Operator:= _
+            xlFilterValues
+             ws.Range("$A$2:$N$65517").AutoFilter Field:=13, Criteria1:=maxDateArrayLZ, Operator:= _
+            xlFilterValues
+              tmpMonth = DateAdd("m", 1, tmpMonth)
+              thisWs.Cells(i, countCity1 + 4).value = ws.AutoFilter.Range.Columns(1).SpecialCells(xlCellTypeVisible).count - 1
+
+
+
+
+        Next i
+    Next city
+
+
+    openWb.Close savechanges:=False
+
+End Sub
+
+
